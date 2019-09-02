@@ -1,7 +1,7 @@
 package server;
 
-import server.handlers.FileHandler;
-import server.handlers.MessageHandler;
+import common.FileRequest;
+import server.handlers.ServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -14,9 +14,14 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 
+import java.io.File;
+
 public class Server {
     private static int port;
     private static final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
+    Data data = new Data();
+    File[] files = data.getFilesNames();
+
 
     public Server(int port){
         this.port = port;
@@ -35,8 +40,7 @@ public class Server {
                             socketChannel.pipeline().addLast(
                                     new ObjectDecoder(MAX_OBJ_SIZE, ClassResolvers.cacheDisabled(null)),
                                     new ObjectEncoder(),
-                                    new MessageHandler(),
-                                    new FileHandler());
+                                    new ServerHandler());
                         }
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
