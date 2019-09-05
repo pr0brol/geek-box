@@ -1,19 +1,27 @@
 package server.handlers;
 
 import common.FileMessage;
+import common.FileRequest;
 import common.MyMessage;
 import common.CommandMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
+import server.Data;
 
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+
+import static common.CommandMessage.*;
 
 public class ServerHandler extends ChannelInboundHandlerAdapter {
 
-    private final String PATH = "server/server_storage/";
+    private final Data data = new Data();
+    private final String PATH = data.getPATH();
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
@@ -24,17 +32,21 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws IOException {
-        if(msg == null){
-            return;
-        }
-        if(msg instanceof FileMessage){
-            fileMessage(msg);
-        }
-        if(msg instanceof MyMessage){
-            myMessage(msg);
-        }
-        if(msg instanceof CommandMessage){
-
+        try{
+            if(msg == null){
+                return;
+            }
+            if(msg instanceof FileMessage){
+                fileMessage(msg);
+            }
+            if(msg instanceof MyMessage){
+                System.out.println(((MyMessage) msg).getText());
+            }
+            if(msg instanceof CommandMessage){
+                commandMessage(ctx, msg);
+            }
+        }finally {
+            ReferenceCountUtil.release(msg);
         }
     }
 
@@ -51,28 +63,36 @@ public class ServerHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public void myMessage(Object msg) {
-        MyMessage mm =  (MyMessage)msg;
-        System.out.println(mm.getText());
-    }
-
-    public void CommandMessage(Object msg){
-        CommandMessage cm = (CommandMessage) msg;
-
-    }
-
-    public File[] fileRequest(File[] files){
-        return files;
+    public void commandMessage(ChannelHandlerContext ctx, Object msg){
+        CommandMessage cmMsg = (CommandMessage) msg;
+        String command = cmMsg.getText();
+        if(command.equals(DELETE)){
+            File file = new File(PATH + cmMsg.getPath());
+            file.delete();
+        }
+        if(command.equals(COPY)){
+            Path path = Paths.get(PATH + cmMsg.getPath());
+            try {
+                FileMessage fm = new FileMessage(path);
+                ctx.write(fm);
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        if(command.equals(REFRESH)){
+            FileRequest fr = new FileRequest(data.getFilesNames());
+            ctx.write(fr);
+        }
     }
 
 
     @Override
-    public void channelReadComplete(ChannelHandlerContext ctx) throws Exception {
+    public void channelReadComplete(ChannelHandlerContext ctx) {
         ctx.flush();
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         cause.printStackTrace();
         ctx.close();
     }

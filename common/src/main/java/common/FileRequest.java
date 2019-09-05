@@ -1,13 +1,13 @@
 package common;
 
 public class FileRequest extends AbstractMessage {
-    private String[] filesname;
+    private String[] filesName;
 
-    public String[] getFilesname() {
-        return filesname;
+    public String[] getFilesName() {
+        return filesName;
     }
 
-    public FileRequest(String[] filesname) {
-        this.filesname = filesname;
+    public FileRequest(String[] filesName) {
+        this.filesName = filesName;
     }
 }

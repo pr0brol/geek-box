@@ -22,9 +22,8 @@ public class NettyClient {
     private static final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
 
 
-    public NettyClient() throws IOException {
+    public NettyClient() {
     }
-
 
     public void run() throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
@@ -39,14 +38,14 @@ public class NettyClient {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
                             socketChannel.pipeline().addLast(
-                                    new ClientHandler(),
-                                    new ObjectDecoder(MAX_OBJ_SIZE, ClassResolvers.cacheDisabled(null)),
-                                    new ObjectEncoder());
+//                                    new ClientHandler(),
+                                    new ObjectEncoder(),
+                                    new ObjectDecoder(MAX_OBJ_SIZE, ClassResolvers.cacheDisabled(null))
+                                    );
                         }
                     });
 
             ChannelFuture f = bootstrap.connect(host, port).sync();
-
             f.channel().closeFuture().sync();
 
         }finally {

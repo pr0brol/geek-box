@@ -1,42 +1,48 @@
 package client;
 
 import common.*;
-import javafx.application.Application;
+import javafx.application.Platform;
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
+import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
 import javafx.stage.Stage;
+import javafx.stage.WindowEvent;
 
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import static common.CommandMessage.*;
-import static javafx.geometry.Pos.*;
 
-public class Window extends Application {
+public class Window {
     private int windowHeight = 480;
     private int windowWidth = 640;
 
     private NettyClient nettyClient;
     private Data data;
 
-//    public Window(NettyClient nettyClient) {
-//        this.nettyClient = nettyClient;
-//    }
+    public Window(NettyClient nettyClient) {
+        this.nettyClient = nettyClient;
+    }
 
-    @Override
-    public void start(Stage primaryStage) throws Exception {
+    public void start(Stage primaryStage) {
 
         AnchorPane root = new AnchorPane();
 
         Scene scene = new Scene(root, windowWidth, windowHeight);
 
         data = new Data();
+
+        primaryStage.setOnCloseRequest(event -> System.exit(0));
 
         TableView<String> areaClient = new TableView<>();
         TableColumn<String, String> pathClientColumn = new TableColumn<>("Client_Path");
@@ -68,6 +74,8 @@ public class Window extends Application {
         primaryStage.setResizable(false);
         primaryStage.setScene(scene);
 
+
+
         Button downloadClient = new Button("загрузить файл");
         downloadClient.setMinWidth(100.0);
         downloadClient.setOnAction(event -> {
@@ -78,6 +86,8 @@ public class Window extends Application {
             } catch (IOException e) {
                 e.printStackTrace();
             }
+            refreshServer(areaServer);
+            refreshServer(areaServer);
         });
 
         Button deleteClient = new Button("удалить файл");
@@ -86,16 +96,12 @@ public class Window extends Application {
             String path = areaClient.getSelectionModel().getSelectedItem();
             File file = new File(data.getPATH() + path);
             file.delete();
+            refreshClient(areaClient);
         });
 
         Button refreshClient = new Button("обновить");
         refreshClient.setMinWidth(100.0);
-        refreshClient.setOnAction(event -> {
-            String[] str = data.getFilesNames();
-            areaClient.setItems(null);
-            ObservableList<String> table = FXCollections.observableArrayList(str);
-            areaClient.setItems(table);
-        });
+        refreshClient.setOnAction(event -> refreshClient(areaClient));
 
         Button downloadServer = new Button("загрузить файл");
         downloadServer.setMinWidth(100.0);
@@ -103,6 +109,27 @@ public class Window extends Application {
             String path = areaServer.getSelectionModel().getSelectedItem();
             CommandMessage cm = new CommandMessage(COPY, path);
             nettyClient.sendMsg(cm);
+            try {
+                Object obj = nettyClient.readObject();                                                               //
+                if(obj instanceof FileMessage){                                                                      //
+                    FileMessage fm = (FileMessage) obj;                                                              //
+                    FileOutputStream fos = null;                                                                     //
+                    try {                                                                                            // ГОВНОКОД
+                        fos = new FileOutputStream(data.getPATH() + fm.getFilename(), true);          //
+                        fos.write(fm.getData());                                                                     //
+                    } catch (FileNotFoundException e) {                                                              //
+                        e.printStackTrace();                                                                         //
+                    } finally {                                                                                      //
+                        fos.close();                                                                                 //
+                    }                                                                                                //
+                }
+                refreshClient(areaClient);
+                refreshClient(areaClient);
+            } catch (ClassNotFoundException e) {
+                e.printStackTrace();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
         });
 
         Button deleteServer = new Button("удалить файл");
@@ -111,29 +138,16 @@ public class Window extends Application {
             String path = areaServer.getSelectionModel().getSelectedItem();
             CommandMessage cm = new CommandMessage(DELETE, path);
             nettyClient.sendMsg(cm);
+            refreshServer(areaServer);
+            refreshServer(areaServer);
         });
 
         Button refreshServer = new Button("обновить");
         refreshServer.setMinWidth(100.0);
         refreshServer.setOnAction(event -> {
-            CommandMessage cm = new CommandMessage(REFRESH, null);
-            nettyClient.sendMsg(cm);
-            try {
-
-                if(nettyClient.readObject() instanceof FileRequest){
-                    FileRequest fr = (FileRequest) nettyClient.readObject();
-                    String[] str = fr.getFilesname();
-                    areaServer.setItems(null);
-                    ObservableList<String> table = FXCollections.observableArrayList(str);
-                    areaServer.setItems(table);
-                }
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
-            }
+            refreshServer(areaServer);
+            refreshServer(areaServer);
         });
-
 
         root.getChildren().add(downloadClient);
         root.getChildren().add(deleteClient);
@@ -167,6 +181,43 @@ public class Window extends Application {
         AnchorPane.setTopAnchor(labelServer, 5.0);
         AnchorPane.setRightAnchor(labelServer, 5.0);
 
+        ExecutorService executorService = Executors.newCachedThreadPool();
+        executorService.submit(() -> {
+            try
+            {
+                nettyClient.run();
+            }
+            catch (Exception e)
+            {
+                e.printStackTrace();
+            }
+        });
+    }
 
+    public void refreshServer(TableView areaServer){
+
+        CommandMessage cm = new CommandMessage(REFRESH, null);
+        nettyClient.sendMsg(cm);
+        try {
+            Object msg = nettyClient.readObject();
+            if(msg instanceof FileRequest){
+                FileRequest fr = (FileRequest) msg;
+                String[] str = fr.getFilesName();
+                areaServer.setItems(null);
+                ObservableList<String> table = FXCollections.observableArrayList(str);
+                areaServer.setItems(table);
+            }
+        } catch (ClassNotFoundException e) {
+            e.printStackTrace();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
+    }
+
+    public void refreshClient(TableView areaClient){
+        String[] str = data.getFilesNames();
+        areaClient.setItems(null);
+        ObservableList<String> table = FXCollections.observableArrayList(str);
+        areaClient.setItems(table);
     }
 }
