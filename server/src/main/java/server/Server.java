@@ -1,6 +1,5 @@
 package server;
 
-import server.handlers.ServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
@@ -12,13 +11,14 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
+import server.handlers.ServerHandler;
 
 
 public class Server {
     private final int port;
-    private final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
+    private final int MAX_OBJ_SIZE = 1024 * 1024 * 1000; // 1 gb
 
-    public Server(int port){
+    public Server(int port) {
         this.port = port;
     }
 

@@ -1,20 +1,17 @@
 package client;
 
 import common.*;
-import javafx.application.Platform;
+
 import javafx.beans.property.ReadOnlyStringWrapper;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
-import javafx.event.EventHandler;
 import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.layout.*;
+import javafx.stage.Modality;
 import javafx.stage.Stage;
-import javafx.stage.WindowEvent;
 
 import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -27,24 +24,38 @@ public class Window {
     private int windowHeight = 480;
     private int windowWidth = 640;
 
-    private NettyClient nettyClient;
+
     private Data data;
+    private NettyClient nettyClient;
+    private String userName;
+
+    TableView<String> areaServer;
+    TableView<String> areaClient;
+
+    Stage newWindow;
 
     public Window(NettyClient nettyClient) {
         this.nettyClient = nettyClient;
     }
 
+    public TableView<String> getAreaServer() {
+        return areaServer;
+    }
+
     public void start(Stage primaryStage) {
-
-        AnchorPane root = new AnchorPane();
-
-        Scene scene = new Scene(root, windowWidth, windowHeight);
 
         data = new Data();
 
+
+        AnchorPane root = new AnchorPane();
+        StackPane pane = new StackPane();
+
+        Scene scene = new Scene(root, windowWidth, windowHeight);
+        Scene firstScene = new Scene(pane, 300, 150);
+
         primaryStage.setOnCloseRequest(event -> System.exit(0));
 
-        TableView<String> areaClient = new TableView<>();
+        areaClient = new TableView<>();
         TableColumn<String, String> pathClientColumn = new TableColumn<>("Client_Path");
         pathClientColumn.setMinWidth(313.0);
         pathClientColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(param.getValue()));
@@ -56,8 +67,7 @@ public class Window {
         AnchorPane.setLeftAnchor(areaClient, 5.0);
         AnchorPane.setTopAnchor(areaClient, 30.0);
 
-
-        TableView<String> areaServer = new TableView<>();
+        areaServer = new TableView<>();
         TableColumn<String, String> pathServerColumn = new TableColumn<>("Server_Path");
         pathServerColumn.setMinWidth(313.0);
         pathServerColumn.setCellValueFactory(param -> new ReadOnlyStringWrapper(param.getValue()));
@@ -74,29 +84,30 @@ public class Window {
         primaryStage.setResizable(false);
         primaryStage.setScene(scene);
 
-
-
         Button downloadClient = new Button("загрузить файл");
         downloadClient.setMinWidth(100.0);
         downloadClient.setOnAction(event -> {
             String name = areaClient.getSelectionModel().getSelectedItem();
-            try {
-                Path path = Paths.get(data.getPATH() + name);
-                nettyClient.sendMsg(new FileMessage(path));
-            } catch (IOException e) {
-                e.printStackTrace();
+            if (name != null) {
+                try {
+                    Path path = Paths.get(data.getPATH() + userName + "/" + name);
+                    nettyClient.sendMsg(new FileMessage(path));
+                } catch (IOException e) {
+                    e.printStackTrace();
+                }
+                refreshServer();
             }
-            refreshServer(areaServer);
-            refreshServer(areaServer);
         });
 
         Button deleteClient = new Button("удалить файл");
         deleteClient.setMinWidth(100.0);
         deleteClient.setOnAction(event -> {
-            String path = areaClient.getSelectionModel().getSelectedItem();
-            File file = new File(data.getPATH() + path);
-            file.delete();
-            refreshClient(areaClient);
+            String name = areaClient.getSelectionModel().getSelectedItem();
+            if (name != null) {
+                File file = new File(data.getPATH() + userName + "/" + name);
+                file.delete();
+                refreshClient(areaClient);
+            }
         });
 
         Button refreshClient = new Button("обновить");
@@ -106,48 +117,28 @@ public class Window {
         Button downloadServer = new Button("загрузить файл");
         downloadServer.setMinWidth(100.0);
         downloadServer.setOnAction(event -> {
-            String path = areaServer.getSelectionModel().getSelectedItem();
-            CommandMessage cm = new CommandMessage(COPY, path);
-            nettyClient.sendMsg(cm);
-            try {
-                Object obj = nettyClient.readObject();                                                               //
-                if(obj instanceof FileMessage){                                                                      //
-                    FileMessage fm = (FileMessage) obj;                                                              //
-                    FileOutputStream fos = null;                                                                     //
-                    try {                                                                                            // ГОВНОКОД
-                        fos = new FileOutputStream(data.getPATH() + fm.getFilename(), true);          //
-                        fos.write(fm.getData());                                                                     //
-                    } catch (FileNotFoundException e) {                                                              //
-                        e.printStackTrace();                                                                         //
-                    } finally {                                                                                      //
-                        fos.close();                                                                                 //
-                    }                                                                                                //
-                }
+            String name = areaServer.getSelectionModel().getSelectedItem();
+            if (name != null) {
+                CommandMessage cm = new CommandMessage(COPY, name);
+                nettyClient.sendMsg(cm);
                 refreshClient(areaClient);
-                refreshClient(areaClient);
-            } catch (ClassNotFoundException e) {
-                e.printStackTrace();
-            } catch (IOException e) {
-                e.printStackTrace();
             }
         });
 
         Button deleteServer = new Button("удалить файл");
         deleteServer.setMinWidth(100.0);
         deleteServer.setOnAction(event -> {
-            String path = areaServer.getSelectionModel().getSelectedItem();
-            CommandMessage cm = new CommandMessage(DELETE, path);
-            nettyClient.sendMsg(cm);
-            refreshServer(areaServer);
-            refreshServer(areaServer);
+            String name = areaServer.getSelectionModel().getSelectedItem();
+            if (name != null) {
+                CommandMessage cm = new CommandMessage(DELETE, name);
+                nettyClient.sendMsg(cm);
+                refreshServer();
+            }
         });
 
         Button refreshServer = new Button("обновить");
         refreshServer.setMinWidth(100.0);
-        refreshServer.setOnAction(event -> {
-            refreshServer(areaServer);
-            refreshServer(areaServer);
-        });
+        refreshServer.setOnAction(event -> refreshServer());
 
         root.getChildren().add(downloadClient);
         root.getChildren().add(deleteClient);
@@ -181,43 +172,80 @@ public class Window {
         AnchorPane.setTopAnchor(labelServer, 5.0);
         AnchorPane.setRightAnchor(labelServer, 5.0);
 
+        newWindow = new Stage();
+        newWindow.initModality(Modality.WINDOW_MODAL);
+        newWindow.initOwner(scene.getWindow());
+        newWindow.setScene(firstScene);
+
+        Label loginLable = new Label("Логин");
+        loginLable.setMinSize(50, 35);
+        loginLable.setTranslateX(-120);
+        loginLable.setTranslateY(-40);
+        pane.getChildren().add(loginLable);
+
+        Label passwordLable = new Label("Пароль");
+        passwordLable.setMinSize(50, 35);
+        passwordLable.setTranslateX(-120);
+        pane.getChildren().add(passwordLable);
+
+        TextField loginField = new TextField();
+        loginField.setMaxSize(210, 20);
+        loginField.setTranslateY(-40);
+        loginField.setTranslateX(35);
+        pane.getChildren().add(loginField);
+
+        PasswordField passwordField = new PasswordField();
+        passwordField.setMaxSize(210, 20);
+        passwordField.setTranslateX(35);
+        pane.getChildren().add(passwordField);
+
+        Button cancelBtn = new Button("отмена");
+        cancelBtn.setTranslateX(90);
+        cancelBtn.setTranslateY(50);
+        cancelBtn.setMinSize(100, 35);
+        cancelBtn.setOnAction(event -> System.exit(0));
+        pane.getChildren().add(cancelBtn);
+
+        Button loginBtn = new Button("вход");
+        loginBtn.setTranslateX(-20);
+        loginBtn.setTranslateY(50);
+        loginBtn.setMinSize(100, 35);
+        loginBtn.setOnAction(event -> {
+            userName = loginField.getText();
+            AuthMessage am = new AuthMessage(userName, passwordField.getText());
+            nettyClient.sendMsg(am);
+            closeModalWindow();
+        });
+        pane.getChildren().add(loginBtn);
+
+        newWindow.setTitle("Авторизация");
+        newWindow.setOnCloseRequest(event -> System.exit(0));
+        newWindow.setResizable(false);
+        newWindow.show();
+
         ExecutorService executorService = Executors.newCachedThreadPool();
         executorService.submit(() -> {
-            try
-            {
-                nettyClient.run();
-            }
-            catch (Exception e)
-            {
+            try {
+                nettyClient.run(this);
+            } catch (Exception e) {
                 e.printStackTrace();
             }
         });
     }
 
-    public void refreshServer(TableView areaServer){
-
+    public void refreshServer() {
         CommandMessage cm = new CommandMessage(REFRESH, null);
         nettyClient.sendMsg(cm);
-        try {
-            Object msg = nettyClient.readObject();
-            if(msg instanceof FileRequest){
-                FileRequest fr = (FileRequest) msg;
-                String[] str = fr.getFilesName();
-                areaServer.setItems(null);
-                ObservableList<String> table = FXCollections.observableArrayList(str);
-                areaServer.setItems(table);
-            }
-        } catch (ClassNotFoundException e) {
-            e.printStackTrace();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
     }
 
-    public void refreshClient(TableView areaClient){
-        String[] str = data.getFilesNames();
+    public void refreshClient(TableView areaClient) {
+        String[] str = data.getFilesNames(userName);
         areaClient.setItems(null);
         ObservableList<String> table = FXCollections.observableArrayList(str);
         areaClient.setItems(table);
+    }
+
+    public void closeModalWindow(){
+        newWindow.close();
     }
 }
