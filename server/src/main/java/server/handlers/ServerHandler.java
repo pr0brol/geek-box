@@ -1,24 +1,24 @@
-package handlers;
+package server.handlers;
 
 import common.FileMessage;
 import common.MyMessage;
-import common.FileRequest;
+import common.CommandMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 
+import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 
+public class ServerHandler extends ChannelInboundHandlerAdapter {
 
-public class ClientHandler extends ChannelInboundHandlerAdapter {
-
-    private final String PATH = "client/client_storage/";
+    private final String PATH = "server/server_storage/";
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) {
-        System.out.println("connected is success");
-        MyMessage msg = new MyMessage("hello server");
+        System.out.println("client connected...");
+        MyMessage msg = new MyMessage("client connected. Hello");
         ctx.write(msg);
     }
 
@@ -33,8 +33,8 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         if(msg instanceof MyMessage){
             myMessage(msg);
         }
-        if(msg instanceof FileRequest){
-            fileRequest(msg);
+        if(msg instanceof CommandMessage){
+
         }
     }
 
@@ -57,12 +57,12 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
     }
 
     public void CommandMessage(Object msg){
+        CommandMessage cm = (CommandMessage) msg;
 
     }
 
-    public String[] fileRequest(Object msg){
-        FileRequest fr = (FileRequest) msg;
-        return fr.getFilesname();
+    public File[] fileRequest(File[] files){
+        return files;
     }
 
 

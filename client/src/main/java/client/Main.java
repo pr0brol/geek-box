@@ -1,7 +1,11 @@
 package client;
 
-    public class Main{
-        public static void main(String[] args) throws Exception {
-            new NettyClient().run();
-        }
+
+
+
+public class Main extends Window {
+
+    public static void main(String[] args) {
+        launch(args);
     }
+}

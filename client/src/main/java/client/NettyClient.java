@@ -1,10 +1,7 @@
 package client;
 
 import common.AbstractMessage;
-import common.FileMessage;
-import common.FileRequest;
-import common.MyMessage;
-import server.handlers.ClientHandler;
+import handlers.ClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -14,16 +11,15 @@ import io.netty.handler.codec.serialization.*;
 
 import java.io.IOException;
 import java.net.Socket;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 
 public class NettyClient {
 
     private static final String host = "localhost";
     private static final int port = 8888;
     private static Socket socket;
-    private static ObjectEncoderOutputStream oeos;
-    private static ObjectDecoderInputStream odis;
+    private static ObjectEncoderOutputStream ObjEncOutStream;
+    private static ObjectDecoderInputStream ObjDecInStream;
+    private static final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
 
 
     public NettyClient() throws IOException {
@@ -33,8 +29,8 @@ public class NettyClient {
     public void run() throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
         socket = new Socket(host, port);
-        oeos = new ObjectEncoderOutputStream(socket.getOutputStream());
-        odis = new ObjectDecoderInputStream(socket.getInputStream());
+        ObjEncOutStream = new ObjectEncoderOutputStream(socket.getOutputStream());
+        ObjDecInStream = new ObjectDecoderInputStream(socket.getInputStream());
         try{
             Bootstrap bootstrap = new Bootstrap()
                     .group(group)
@@ -42,19 +38,15 @@ public class NettyClient {
                     .handler(new ChannelInitializer<SocketChannel>() {
                         @Override
                         protected void initChannel(SocketChannel socketChannel) throws Exception {
-                            socketChannel.pipeline().addLast(new ClientHandler());
+                            socketChannel.pipeline().addLast(
+                                    new ClientHandler(),
+                                    new ObjectDecoder(MAX_OBJ_SIZE, ClassResolvers.cacheDisabled(null)),
+                                    new ObjectEncoder());
                         }
                     });
 
             ChannelFuture f = bootstrap.connect(host, port).sync();
 
-            MyMessage msg = new MyMessage("hello server");
-            oeos.writeObject(msg.getText());
-            Path path = Paths.get("client/client_storage/1.mp3"); //delete
-            FileMessage fm = new FileMessage(path);  //delete
-            oeos.writeObject(fm);            //delete
-            MyMessage msgFromServer = (MyMessage) odis.readObject();
-            System.out.println(msgFromServer.getText());
             f.channel().closeFuture().sync();
 
         }finally {
@@ -63,13 +55,13 @@ public class NettyClient {
     }
 
     public static AbstractMessage readObject() throws ClassNotFoundException, IOException {
-        Object obj = odis.readObject();
+        Object obj = ObjDecInStream.readObject();
         return (AbstractMessage) obj;
     }
 
     public static boolean sendMsg(AbstractMessage msg) {
         try {
-            oeos.writeObject(msg);
+            ObjEncOutStream.writeObject(msg);
             return true;
         } catch (IOException e) {
             e.printStackTrace();
