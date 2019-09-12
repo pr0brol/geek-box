@@ -13,4 +13,11 @@ public class CommandMessage extends AbstractMessage {
         this.path = path;
     }
 
+    public String getText() {
+        return text;
+    }
+
+    public String getPath() {
+        return path;
+    }
 }

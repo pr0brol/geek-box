@@ -1,10 +1,12 @@
 package handlers;
 
+import common.AbstractMessage;
 import common.FileMessage;
 import common.MyMessage;
 import common.FileRequest;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
@@ -24,17 +26,21 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws IOException {
-        if(msg == null){
-            return;
-        }
-        if(msg instanceof FileMessage){
-            fileMessage(msg);
-        }
-        if(msg instanceof MyMessage){
-            myMessage(msg);
-        }
-        if(msg instanceof FileRequest){
-            fileRequest(msg);
+        try{
+            if(msg == null){
+                return;
+            }
+            if(msg instanceof FileMessage){
+                fileMessage(msg);
+            }
+            if(msg instanceof MyMessage){
+                System.out.println(((MyMessage) msg).getText());
+            }
+            if(msg instanceof FileRequest){
+                fileRequest(msg);
+            }
+        }finally {
+            ReferenceCountUtil.release(msg);
         }
     }
 
@@ -42,6 +48,7 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         FileMessage fm = (FileMessage) msg;
         FileOutputStream fos = null;
         try {
+
             fos = new FileOutputStream(PATH + fm.getFilename(), true);
             fos.write(fm.getData());
         } catch (FileNotFoundException e) {
@@ -51,18 +58,9 @@ public class ClientHandler extends ChannelInboundHandlerAdapter {
         }
     }
 
-    public void myMessage(Object msg) {
-        MyMessage mm =  (MyMessage)msg;
-        System.out.println(mm.getText());
-    }
-
-    public void CommandMessage(Object msg){
-
-    }
-
     public String[] fileRequest(Object msg){
         FileRequest fr = (FileRequest) msg;
-        return fr.getFilesname();
+        return fr.getFilesName();
     }
 
 

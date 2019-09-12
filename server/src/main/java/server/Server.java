@@ -1,6 +1,5 @@
 package server;
 
-import common.FileRequest;
 import server.handlers.ServerHandler;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -14,14 +13,10 @@ import io.netty.handler.codec.serialization.ClassResolvers;
 import io.netty.handler.codec.serialization.ObjectDecoder;
 import io.netty.handler.codec.serialization.ObjectEncoder;
 
-import java.io.File;
 
 public class Server {
-    private static int port;
-    private static final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
-    Data data = new Data();
-    File[] files = data.getFilesNames();
-
+    private final int port;
+    private final int MAX_OBJ_SIZE = 1024 * 1024 * 100; // 10 mb
 
     public Server(int port){
         this.port = port;
