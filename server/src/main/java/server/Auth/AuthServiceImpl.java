@@ -1,22 +1,26 @@
 package server.Auth;
 
-import server.User;
+import common.AuthMessage;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class AuthServiceImpl implements AuthService {
+public class AuthServiceImpl {
 
-    public Map<String, String> users = new HashMap<>();
+    public static Map<String, String> users = new HashMap<>();
 
-    public AuthServiceImpl(){
+    public AuthServiceImpl() {
         users.put("ivan", "123");
         users.put("petr", "456");
         users.put("jul", "789");
     }
-    @Override
-    public boolean authUser(User user){
-        String pwd = users.get(user.getLogin());
-        return pwd !=null && pwd.equals(user.getPassword());
+
+    public static Map<String, String> getUsers() {
+        return users;
+    }
+
+    public static boolean authUser(AuthMessage msg) {
+        String password = users.get(msg.getLogin());
+        return password != null && password.equals(msg.getPassword());
     }
 }

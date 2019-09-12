@@ -8,7 +8,7 @@ public class CommandMessage extends AbstractMessage {
     private final String text;
     private final String path;
 
-    public CommandMessage(String text, String path){
+    public CommandMessage(String text, String path) {
         this.text = text;
         this.path = path;
     }
