@@ -1,11 +1,12 @@
-package server.Auth;
+package server.auth;
 
 import common.AuthMessage;
+import server.Interface.AuthService;
 
 import java.util.HashMap;
 import java.util.Map;
 
-public class AuthServiceImpl {
+public class AuthServiceImpl implements AuthService {
 
     public static Map<String, String> users = new HashMap<>();
 
@@ -15,11 +16,7 @@ public class AuthServiceImpl {
         users.put("jul", "789");
     }
 
-    public static Map<String, String> getUsers() {
-        return users;
-    }
-
-    public static boolean authUser(AuthMessage msg) {
+    public boolean authUser(AuthMessage msg) {
         String password = users.get(msg.getLogin());
         return password != null && password.equals(msg.getPassword());
     }

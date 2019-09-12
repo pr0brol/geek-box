@@ -1,7 +1,8 @@
-package client;
+package client.network;
 
+import client.gui.Window;
 import common.AbstractMessage;
-import handlers.ClientHandler;
+import client.handlers.ClientHandler;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -11,11 +12,11 @@ import io.netty.handler.codec.serialization.*;
 
 public class NettyClient {
 
-    private static final String host = "localhost";
-    private static final int port = 8888;
-    private static Channel currentChannel;
-
+    private final String HOST = "localhost";
+    private final int PORT = 8888;
     private static final int MAX_OBJ_SIZE = 1024 * 1024 * 1000;  //1 gb
+
+    private static Channel currentChannel;
 
     public void run(Window window) throws Exception {
         EventLoopGroup group = new NioEventLoopGroup();
@@ -34,7 +35,7 @@ public class NettyClient {
                         }
                     });
 
-            ChannelFuture f = bootstrap.connect(host, port).sync();
+            ChannelFuture f = bootstrap.connect(HOST, PORT).sync();
             f.channel().closeFuture().sync();
 
         } finally {

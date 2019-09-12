@@ -1,6 +1,7 @@
 package common;
 
 public class AuthMessage extends AbstractMessage {
+
     private String login;
     private String password;
 
