@@ -1,26 +1,24 @@
-package handlers;
+package server.handlers;
 
-import io.netty.buffer.ByteBuf;
+import common.MyMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.ReferenceCountUtil;
 
-public class ServerHandler extends ChannelInboundHandlerAdapter {
+public class MessageHandler extends ChannelInboundHandlerAdapter {
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        System.out.println("client connected...");
+        MyMessage msg = new MyMessage("client connected. Hello");
+        ctx.write(msg);
+    }
+
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
-        ByteBuf in = (ByteBuf) msg;
-        ctx.write("Hello client!");
-        try{
-            while (in.isReadable()){
-                System.out.print((char) in.readByte() + " ");
-                System.out.flush();
+        MyMessage out = new MyMessage("hello client");
 
-            }
-
-
-        }finally {
-            ReferenceCountUtil.release(msg);
-        }
+        System.out.println(msg);
+        ctx.write(out);
     }
 
     @Override
