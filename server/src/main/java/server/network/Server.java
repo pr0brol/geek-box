@@ -1,4 +1,4 @@
-package server;
+package server.network;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.ChannelFuture;
@@ -15,11 +15,11 @@ import server.handlers.ServerHandler;
 
 
 public class Server {
-    private final int port;
+    private final int PORT;
     private final int MAX_OBJ_SIZE = 1024 * 1024 * 1000; // 1 gb
 
     public Server(int port) {
-        this.port = port;
+        this.PORT = port;
     }
 
     public void run() throws Exception {
@@ -40,7 +40,7 @@ public class Server {
                     })
                     .option(ChannelOption.SO_BACKLOG, 128)
                     .childOption(ChannelOption.SO_KEEPALIVE, true);
-            ChannelFuture f = b.bind(port).sync();
+            ChannelFuture f = b.bind(PORT).sync();
             f.channel().closeFuture().sync();
 
 

@@ -1,6 +1,7 @@
 package common;
 
 public class CommandMessage extends AbstractMessage {
+
     public static String COPY = "/copy";
     public static String DELETE = "/delete";
     public static String REFRESH = "/refresh";

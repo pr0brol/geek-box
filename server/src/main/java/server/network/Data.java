@@ -1,10 +1,10 @@
-package client;
+package server.network;
 
 import java.io.File;
 
 public class Data {
 
-    private final String PATH = "client/client_storage/";
+    private final String PATH = "server/server_storage/";
 
     public String[] getFilesNames(String login) {
         String path = PATH + login + "/";
@@ -16,5 +16,4 @@ public class Data {
     public String getPATH() {
         return PATH;
     }
-
 }

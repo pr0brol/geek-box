@@ -4,8 +4,8 @@ import common.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import server.Auth.AuthServiceImpl;
-import server.Data;
+import server.auth.AuthServiceImpl;
+import server.network.Data;
 
 import java.io.File;
 import java.io.FileNotFoundException;

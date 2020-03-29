@@ -1,10 +1,14 @@
-package handlers;
+package client.handlers;
 
-import client.Window;
-import common.*;
+import client.gui.Window;
+import common.AuthMessage;
+import common.FileMessage;
+import common.FileRequest;
+import common.MyMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
+import javafx.application.Platform;
 import javafx.collections.FXCollections;
 import javafx.collections.ObservableList;
 
@@ -16,6 +20,7 @@ import java.io.IOException;
 public class ClientHandler extends ChannelInboundHandlerAdapter {
 
     private final String PATH = "client/client_storage/";
+
     private String userName;
     private Window window;
 
